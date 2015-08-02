@@ -69,8 +69,7 @@ class Commands:
                     filename = os.path.join(root, f)
                     if filename.endswith('.mp3'):
                         libFile.write(filename + "\n")
-                        self.library.append(Node(filename, None))
-        return self.library
+                        self.library.append(Node(filename, None).location)
 
     def loadPlistSelf(self, location):
         """

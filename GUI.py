@@ -103,7 +103,7 @@ class GUI:
         root.resizable(width=FALSE, height=FALSE)
         root.geometry('{}x{}'.format(800, 500))
         root.config(menu=self.menuBar)
-        root.protocol("WM_DELETE_WINDOW", self.cleanup())
+        root.protocol("WM_DELETE_WINDOW", self.setExitCondition())
 
 
         self.initSession()
@@ -117,7 +117,7 @@ class GUI:
         if os.path.isfile("tracks.lib"):
             file = open("tracks.lib", "r")
             for i in file.readlines():
-                self.library.append(i)
+                self.player.library.append(i)
 
                 self.libraryBox.insert(END, Node(i, None).title)
         index = 0
@@ -149,17 +149,29 @@ class GUI:
 
         pop = popupWindow(root)
         root.wait_window(pop.top)
-        name = pop.value
+
+        try:
+            # if user hasn't selected a playlist name return
+            name = pop.value
+        except AttributeError:
+            self.newPlaylist.config(relief=RAISED)
+            return
+
+        #update GUI
         self.playlists.append(name)
         self.playListBox.insert(END, name)
         self.playListBox.update()
+        index = self.playListMenu.index('last')
+        self.playListMenu.add_command(label=name,
+                                      command=lambda: self.addToPlayList(self.playListMenu, index))
+
+
+        #create playlist file
         playListName = name + ".pList"
         file = open(playListName, "a")
         file.close()
 
-        index = self.playListMenu.index('last')
-        self.playListMenu.add_command(label=name,
-                                      command=lambda: self.addToPlayList(self.playListMenu, index))
+
 
     def addToPlayList(self, parent, index, multiNode=None):
         """
@@ -173,7 +185,7 @@ class GUI:
 
         with open(parent.entrycget(index, 'label') + ".pList", "w") as pList:
             if multiNode == None:
-                pList.write(self.library[self.currLibrIndex])
+                pList.write(self.player.library[self.currLibrIndex])
             else:
                 currentNode = multiNode.head
                 while currentNode != None:
@@ -299,9 +311,10 @@ class GUI:
             :return: None
         """
 
-        loadedTracks = self.player.loadLibarary(tkFileDialog.askdirectory())
+        self.player.loadLibarary(tkFileDialog.askdirectory())
+        loadedTracks = self.player.library
         for i in loadedTracks:
-            self.libraryBox.insert(END, i.title)
+            self.libraryBox.insert(END, Node(i, None).title)
 
     def songCheck(self):
         """
@@ -368,7 +381,7 @@ class GUI:
         else:
             self.player.pygame.mixer.music.stop()
 
-    def cleanup(self):
+    def setExitCondition(self):
         """
             terminates running thread and program on user exit
 
